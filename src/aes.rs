@@ -1,5 +1,5 @@
 //! (TODO) Hardware AES calculator (AES)
-use crate::pac::AES;
+use crate::{pac::AES, sysctl};
 use core::marker::PhantomData;
 
 pub struct Aes<MODE, KLEN> {
@@ -63,6 +63,40 @@ impl<MODE, KLEN> Aes<MODE, KLEN> {
     // todo: clock
     pub fn free(self) -> AES {
         self.aes
+    }
+
+    pub fn clk_init(&self) {
+        sysctl::clk_en_peri().modify(|_r, w| w.aes_clk_en().set_bit());
+        sysctl::peri_reset().modify(|_r, w| w.aes_reset().set_bit());
+        sysctl::peri_reset().modify(|_r, w| w.aes_reset().clear_bit());
+    }
+
+    pub fn write_add(&self,add_data:u32){
+        unsafe { self.aes.aad_data.write(|w| w.bits(add_data)); }
+    }
+
+    pub fn get_data_in_flag(&self) -> u32 {
+        self.aes.data_in_flag.read().bits()
+    }
+
+    pub fn get_data_out_flag(&self) -> u32 {
+        self.aes.data_out_flag.read().bits()
+    }
+
+    pub fn get_tag_in_flag(&self) -> u32 {
+        self.aes.tag_in_flag.read().bits()
+    }
+
+    pub fn get_out_data(&self) -> u32 {
+        self.aes.out_data.read().bits()
+    }
+
+    pub fn get_tag_chk(&self) -> u32 {
+        self.aes.tag_chk.read().bits()
+    }
+
+    pub fn clear_chk_tag(&self) {
+        unsafe { self.aes.tag_clear.write(|w| w.bits(0)) }
     }
 }
 
